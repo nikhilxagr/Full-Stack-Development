@@ -17,6 +17,7 @@ app.use(cors({
   allowHeaders: ["Content-Type", "Authorization"],
 }));
 
+
 app.get("/", (req, res) => {
   res.send("Welcome to the Project Management API");
 });
