@@ -45,4 +45,46 @@ const userLoginValidation = () => {
   ];
 };
 
-export { userRegisterValidation, userLoginValidation };
+const userChangeCurrentPassword = () => {
+  return [
+    body("currentPassword")
+      .trim()
+      .notEmpty()
+      .withMessage("Current password is required"),
+    body("newPassword")
+      .trim()
+      .notEmpty()
+      .withMessage("New password is required")
+      .isLowercase()
+      .withMessage("New password must be in lowercase")
+      .isLength({ min: 6 })
+      .withMessage("New password must be at least 6 characters long"),
+  ];
+};
+
+const userForgotPasswordValidation = () => {
+  return [
+    body("email")
+      .trim()
+      .notEmpty()
+      .withMessage("Email is required")
+      .isEmail()
+      .withMessage("Invalid email format"),
+  ];
+};
+
+const userResetForgotPasswordValidation = () => {
+  return [
+    body("newPassword")
+      .trim()
+      .notEmpty()
+      .withMessage("New password is required")
+      .isLowercase()
+      .withMessage("New password must be in lowercase")
+      .isLength({ min: 6 })
+      .withMessage("New password must be at least 6 characters long"),
+  ];
+};
+
+
+export { userRegisterValidation, userLoginValidation, userChangeCurrentPassword, userForgotPasswordValidation, userResetForgotPasswordValidation };
