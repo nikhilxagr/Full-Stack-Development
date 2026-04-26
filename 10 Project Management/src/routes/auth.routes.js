@@ -8,9 +8,12 @@ import {
 } from "../controllers/auth.controllers.js";
 import { validate } from "../middlewares/validator.middleware.js";
 import {
+  userChangeCurrentPassword,
   userForgotPasswordValidation,
   userLoginValidation,
   userRegisterValidation,
+  createProjectValidation,
+  addMemberToProjectValidation,
 } from "../validaters/index.js";
 
 import { verifyJWT } from "../middlewares/auth.middleware.js";
