@@ -1,7 +1,32 @@
 import { asyncHandler } from '../utils/asyncHandler.js';
 import { ApiError } from '../utils/ApiError.js';
 import { User } from '../models/user.model.js';
-import { uploadOnCloudinary, deleteFromCloudinary } from '../utils/cloudinary.js';
+import {
+  uploadOnCloudinary,
+  deleteFromCloudinary,
+} from '../utils/cloudinary.js';
+
+const generateAccessAndRefreshTokens = async (userId) => {
+  try {
+    const user = await User.findById(userId);
+
+    if (!user) {
+      throw new ApiError('User not found', 404);
+    }
+
+    const accessToken = await user.generateAccessToken();
+    const refreshToken = await user.generateRefreshToken();
+
+    user.refreshToken = refreshToken;
+    await user.save();
+    return { accessToken, refreshToken };
+
+  } catch (error) {
+    console.error('Error generating tokens:', error);
+    throw new ApiError('Failed to generate tokens', 500);
+  }
+};
+
 
 const registerUser = asyncHandler(async (req, res) => {
   const { fullName, email, username, password } = req.body;
@@ -78,10 +103,10 @@ const registerUser = asyncHandler(async (req, res) => {
     throw new ApiError('User registration failed', 500);
   }
 
-  if(avatar && avatar.public_id) {
+  if (avatar && avatar.public_id) {
     await deleteFromCloudinary(avatar.public_id);
   }
-  if(coverPhoto && coverPhoto.public_id) {
+  if (coverPhoto && coverPhoto.public_id) {
     await deleteFromCloudinary(coverPhoto.public_id);
   }
 
@@ -92,4 +117,44 @@ const registerUser = asyncHandler(async (req, res) => {
   });
 });
 
-export { registerUser };
+
+const loginUser = asyncHandler ( async (req, res) => {
+  const { emailOrUsername, password } = req.body;
+  
+  if (!email) {
+    throw new ApiError('Email is required', 400);
+  }
+
+const user = await User.findOne({
+  $or: [{username}, {email}]
+});
+
+// validate the password
+
+const {accessToken, refreshToken} = await 
+generateAccessAndRefereshToken(user._id)
+
+const loggedInUser = await User.findById(user._id).select('-password -refreshToken');
+
+const options = {
+  httpOnly: true,
+  secure: process.env.NODE_ENV === 'production',
+  sameSite: 'strict',
+  maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
+};
+
+return res
+.status(200)
+.cookie('refreshToken', refreshToken, options)
+.cookie('accessToken', accessToken, options)  
+.json(new ApiResponse (
+  200,
+    {user: loggedInUser , accessToken, refreshToken},
+    'User logged in successfully'
+)
+
+
+})
+
+
+export { registerUser, loginUser };
