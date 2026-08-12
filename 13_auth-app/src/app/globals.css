@@ -1,26 +1,67 @@
 @import "tailwindcss";
 
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
-}
-
-@theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
-}
-
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
+  --background: #0a0a0a;
+  --foreground: #ededed;
 }
 
 body {
   background: var(--background);
   color: var(--foreground);
   font-family: Arial, Helvetica, sans-serif;
+  min-height: 100vh;
+}
+
+.simple-card {
+  background-color: #171717;
+  border: 1px solid #262626;
+  border-radius: 0.75rem;
+  padding: 1.5rem;
+}
+
+.simple-input {
+  width: 100%;
+  padding: 0.625rem 0.875rem;
+  background-color: #0a0a0a;
+  border: 1px solid #404040;
+  border-radius: 0.5rem;
+  color: #ffffff;
+  outline: none;
+  transition: border-color 0.15s ease;
+}
+
+.simple-input:focus {
+  border-color: #a3a3a3;
+}
+
+.simple-btn {
+  width: 100%;
+  padding: 0.625rem 1rem;
+  background-color: #ffffff;
+  color: #000000;
+  font-weight: 600;
+  border-radius: 0.5rem;
+  transition: opacity 0.15s ease;
+}
+
+.simple-btn:hover:not(:disabled) {
+  opacity: 0.9;
+}
+
+.simple-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.simple-btn-secondary {
+  padding: 0.5rem 1rem;
+  background-color: #262626;
+  color: #ffffff;
+  border: 1px solid #404040;
+  border-radius: 0.5rem;
+  transition: background-color 0.15s ease;
+}
+
+.simple-btn-secondary:hover:not(:disabled) {
+  background-color: #404040;
 }

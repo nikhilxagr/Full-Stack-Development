@@ -2,20 +2,19 @@ import mongoose from "mongoose";
 
 export async function connect() {
   try {
-    const conn = await mongoose.connect(process.env.MONGO_URI!);
-      const connection = mongoose.connection;
+    if (mongoose.connection.readyState >= 1) {
+      return;
+    }
 
-      connection.on('connected', () => {
-        console.log('MongoDB connected successfully');
-      });
+    if (!process.env.MONGO_URI) {
+      console.warn("MONGO_URI environment variable is missing.");
+      return;
+    }
 
-      connection.on('error', (err) => {
-        console.error('MongoDB connection error:', err);
-      });
-
+    await mongoose.connect(process.env.MONGO_URI);
+    console.log("MongoDB connected successfully");
   } catch (error) {
-    console.log('Something went wrong while connecting to the database:');
-    console.log(error);
+    console.error("Something went wrong while connecting to the database:", error);
   }
 }
 
