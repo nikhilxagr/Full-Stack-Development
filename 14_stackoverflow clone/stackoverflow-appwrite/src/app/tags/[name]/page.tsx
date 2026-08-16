@@ -2,39 +2,41 @@
 
 import React, { useEffect, useState, use } from "react";
 import Link from "next/link";
-import { PlusCircle, HelpCircle, Loader2, SearchX } from "lucide-react";
+import { Tag, Loader2, PlusCircle, SearchX } from "lucide-react";
 import { databases } from "@/models/client/config";
 import { db, questionCollection, answerCollection, voteCollection } from "@/models/name";
 import { Query, Models } from "appwrite";
 import QuestionCard from "@/components/QuestionCard";
 import RightSidebar from "@/components/RightSidebar";
 
-interface SearchParamsProps {
-  searchParams: Promise<{ search?: string }>;
+interface TagDetailPageProps {
+  params: Promise<{ name: string }>;
 }
 
-export default function HomePage(props: SearchParamsProps) {
-  const searchParams = use(props.searchParams);
-  const searchQuery = searchParams?.search || "";
-
+export default function TagDetailPage(props: TagDetailPageProps) {
+  const { name: tagName } = use(props.params);
   const [questions, setQuestions] = useState<Models.Document[]>([]);
   const [loading, setLoading] = useState(true);
-  const [activeTab, setActiveTab] = useState<"newest" | "unanswered">("newest");
 
   useEffect(() => {
-    async function fetchQuestions() {
+    async function fetchQuestionsByTag() {
       setLoading(true);
       try {
-        const queries = [Query.orderDesc("$createdAt"), Query.limit(25)];
-        if (searchQuery) {
-          queries.push(Query.search("title", searchQuery));
-        }
+        const res = await databases.listDocuments(db, questionCollection, [
+          Query.orderDesc("$createdAt"),
+        ]);
 
-        const res = await databases.listDocuments(db, questionCollection, queries);
+        const filtered = res.documents.filter((doc) => {
+          const tags = Array.isArray(doc.tags)
+            ? doc.tags
+            : typeof doc.tags === "string"
+            ? (doc.tags as string).split(",").map((t) => t.trim().toLowerCase())
+            : [];
+          return tags.includes(tagName.toLowerCase());
+        });
 
-        // Fetch answer counts and vote counts for each question
         const enriched = await Promise.all(
-          res.documents.map(async (doc) => {
+          filtered.map(async (doc) => {
             const [answersRes, votesRes] = await Promise.all([
               databases.listDocuments(db, answerCollection, [
                 Query.equal("questionId", doc.$id),
@@ -57,35 +59,27 @@ export default function HomePage(props: SearchParamsProps) {
         );
 
         setQuestions(enriched);
-      } catch (error) {
-        console.error("Error fetching questions:", error);
+      } catch (err) {
+        console.error("Error fetching tagged questions:", err);
       } finally {
         setLoading(false);
       }
     }
 
-    fetchQuestions();
-  }, [searchQuery]);
-
-  const filteredQuestions = questions.filter((q: any) => {
-    if (activeTab === "unanswered") {
-      return (q.answersCount || 0) === 0;
-    }
-    return true;
-  });
+    fetchQuestionsByTag();
+  }, [tagName]);
 
   return (
     <div className="flex gap-6 min-h-screen">
-      {/* Main Content Area */}
       <div className="flex-1 space-y-6 min-w-0">
-        {/* Header */}
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-zinc-200 pb-4 dark:border-zinc-800">
           <div>
-            <h1 className="text-2xl font-bold tracking-tight text-zinc-900 dark:text-zinc-100">
-              {searchQuery ? `Search Results for "${searchQuery}"` : "All Questions"}
+            <h1 className="text-2xl font-bold tracking-tight text-zinc-900 dark:text-zinc-100 flex items-center gap-2">
+              <Tag className="h-6 w-6 text-orange-500" />
+              Questions tagged [{tagName}]
             </h1>
             <p className="text-xs text-zinc-500 dark:text-zinc-400 mt-1">
-              {filteredQuestions.length} {filteredQuestions.length === 1 ? "question" : "questions"}
+              {questions.length} {questions.length === 1 ? "question" : "questions"}
             </p>
           </div>
 
@@ -98,39 +92,14 @@ export default function HomePage(props: SearchParamsProps) {
           </Link>
         </div>
 
-        {/* Tabs Filter */}
-        <div className="flex items-center gap-2 border-b border-zinc-200 dark:border-zinc-800 pb-2">
-          <button
-            onClick={() => setActiveTab("newest")}
-            className={`px-3 py-1.5 text-xs font-medium rounded-md transition ${
-              activeTab === "newest"
-                ? "bg-orange-500 text-white font-semibold shadow-sm"
-                : "text-zinc-600 hover:bg-zinc-100 dark:text-zinc-400 dark:hover:bg-zinc-800"
-            }`}
-          >
-            Newest
-          </button>
-          <button
-            onClick={() => setActiveTab("unanswered")}
-            className={`px-3 py-1.5 text-xs font-medium rounded-md transition ${
-              activeTab === "unanswered"
-                ? "bg-orange-500 text-white font-semibold shadow-sm"
-                : "text-zinc-600 hover:bg-zinc-100 dark:text-zinc-400 dark:hover:bg-zinc-800"
-            }`}
-          >
-            Unanswered
-          </button>
-        </div>
-
-        {/* Questions List */}
         {loading ? (
           <div className="flex flex-col items-center justify-center py-16 gap-3 text-zinc-400">
             <Loader2 className="h-8 w-8 animate-spin text-orange-500" />
-            <p className="text-xs">Loading questions...</p>
+            <p className="text-xs">Loading tagged questions...</p>
           </div>
-        ) : filteredQuestions.length > 0 ? (
+        ) : questions.length > 0 ? (
           <div className="space-y-4">
-            {filteredQuestions.map((q: any) => (
+            {questions.map((q: any) => (
               <QuestionCard key={q.$id} question={q} />
             ))}
           </div>
@@ -138,12 +107,10 @@ export default function HomePage(props: SearchParamsProps) {
           <div className="flex flex-col items-center justify-center py-16 text-center border border-dashed border-zinc-300 rounded-lg p-8 dark:border-zinc-800">
             <SearchX className="h-12 w-12 text-zinc-400 mb-3" />
             <h3 className="text-base font-semibold text-zinc-800 dark:text-zinc-200">
-              No questions found
+              No questions found under [{tagName}]
             </h3>
             <p className="text-xs text-zinc-500 dark:text-zinc-400 max-w-sm mt-1">
-              {searchQuery
-                ? `We couldn't find any questions matching "${searchQuery}". Try different keywords.`
-                : "Be the first one to ask a question to the community!"}
+              Be the first developer to ask a question under this tag!
             </p>
             <Link
               href="/questions/ask"
@@ -156,7 +123,6 @@ export default function HomePage(props: SearchParamsProps) {
         )}
       </div>
 
-      {/* Right Sidebar */}
       <RightSidebar />
     </div>
   );
