@@ -26,12 +26,12 @@ export default clerkMiddleware(async (auth, req) => {
   if (!userId) {
     // Protected API routes
     if (isApiRequest && !isPublicApiRoute(req)) {
-      return NextResponse.redirect(new URL("/signin", req.url));
+      return NextResponse.redirect(new URL("/sign-in", req.url));
     }
 
     // Protected page routes
     if (!isPublicRoute(req) && !isPublicApiRoute(req)) {
-      return NextResponse.redirect(new URL("/signin", req.url));
+      return NextResponse.redirect(new URL("/sign-in", req.url));
     }
   }
 
